@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,11 +8,49 @@ class Product extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'price', 'category_id'];
+    protected $fillable = [
+        'name',
+        'img',
+        'likes',
+        'price',
+        'category_id',
+    ];
 
-    // Define the relationship with the Category model
+    // Cast img field to an array when retrieving data
+    protected $casts = [
+        'img' => 'array',
+    ];
+
+    // Define relationship with Category
     public function category()
     {
-        return $this->belongsTo(Category::class, 'category_id');
+        return $this->belongsTo(Category::class);
     }
 }
+
+// namespace App\Models;
+
+// use Illuminate\Database\Eloquent\Factories\HasFactory;
+// use Illuminate\Database\Eloquent\Model;
+
+// class Product extends Model
+// {
+//     use HasFactory;
+
+//     protected $fillable = [
+//         'name',
+//         'img',
+//         'likes',
+//         'price',
+//         'category_id',
+//     ];
+
+//     // Cast img field to an array
+//     protected $casts = [
+//         'img' => 'array',
+//     ];
+//     public function category()
+//     {
+//         return $this->belongsTo(Category::class, 'category_id');
+//     }
+// }

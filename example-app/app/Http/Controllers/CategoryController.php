@@ -47,10 +47,15 @@ class CategoryController extends Controller
         }
     }
     
-    public function show(Category $category)
-    {
-        return response()->json($category);
-    }
+   public function show($id)
+{
+    $product = Product::with('category')->findOrFail($id);
+
+    return response()->json([
+        'message' => 'Product retrieved successfully',
+        'data' => $product,
+    ]);
+}
 
     public function update(Request $request, Category $category)
     {

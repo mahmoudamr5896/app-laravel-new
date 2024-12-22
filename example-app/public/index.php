@@ -15,3 +15,12 @@ require __DIR__.'/../vendor/autoload.php';
 // Bootstrap Laravel and handle the request...
 (require_once __DIR__.'/../bootstrap/app.php')
     ->handleRequest(Request::capture());
+
+    // $imageUrl = asset('storage/' . $imagePath);
+    // // Store $imageUrl in your database
+// 'public' => [
+//     'driver' => 'local',
+//     'root' => storage_path('app/public'),
+//     'url' => env('APP_URL') . '/storage',
+//     'visibility' => 'public',
+// ],
