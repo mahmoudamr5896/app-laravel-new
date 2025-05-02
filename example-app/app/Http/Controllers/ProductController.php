@@ -1,10 +1,12 @@
 <?php
+
+
 namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Models\Category;
 
 class ProductController extends Controller
 {
@@ -15,7 +17,7 @@ class ProductController extends Controller
      */
     public function index()
     {
-        $products = Product::with('category')->get();
+        $products = Product::with('category', 'user')->get();
         
         return response()->json([
             'message' => 'Products fetched successfully',
@@ -29,6 +31,172 @@ class ProductController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
+    public function store(Request $request)
+    {
+        // Validate the incoming request
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'img' => 'required|array', // Accept multiple images as an array
+            'img.*' => 'required|file|image|max:2048', // Validate each image
+            'price' => 'required|numeric|min:0',
+            'category_id' => 'required|exists:categories,id',
+            'user_id' => 'required|exists:users,id', // Validate that the user_id exists
+        ]);
+
+        // // Process each uploaded image
+        // $imageUrls = [];
+        // foreach ($validatedData['img'] as $image) {
+        //     // Generate a unique name for the image
+        //     $imageName = Str::random(32) . '.' . $image->getClientOriginalExtension();  // Random string + original file extension
+        //     // Store the image with the custom name
+        //     $imagePath = $image->storeAs('products', $imageName, 'public');
+            
+        //     // Add the image path to the array
+        //     $imageUrls[] = $imagePath;
+        // }
+
+        // // Save image URLs as JSON in the database
+        // $validatedData['img'] = json_encode($imageUrls);
+    $imageUrls = [];
+    foreach ($validatedData['img'] as $image) {
+        $imagePath = $image->store('products', 'public'); // Save image to 'storage/app/public/products'
+        $imageUrls[] = asset('storage/' . $imagePath); // Generate the full URL
+    }
+
+    // Save image URLs as JSON in the database
+    $validatedData['img'] = json_encode($imageUrls);
+
+        // Create the product and associate it with the provided user_id
+        $product = Product::create($validatedData);
+
+        return response()->json([
+            'message' => 'Product created successfully',
+            'data' => $product,
+        ], 201);
+    }
+
+    public function getProductsByCategory($categoryId)
+    {
+        // Find the category with the provided ID
+        $category = Category::find($categoryId);
+
+        // If the category doesn't exist, return a 404 response
+        if (!$category) {
+            return response()->json(['message' => 'Category not found'], 404);
+        }
+
+        // Fetch all products associated with the category
+        $products = $category->products;
+
+        // Return the products as a JSON response
+        return response()->json($products);
+    }
+    /**
+     * Display the specified product.
+     *
+     * @param  \App\Models\Product  $product
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function show(Product $product)
+    {
+        $product->load('category', 'user'); // Eager load category and user relationships
+
+        return response()->json([
+            'message' => 'Product fetched successfully',
+            'data' => $product,
+        ]);
+    }
+
+    /**
+     * Update the specified product.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Product  $product
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function update(Request $request, Product $product)
+    {
+        // Validate incoming request data
+        $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'img' => 'sometimes|required|array',
+            'img.*' => 'sometimes|required|string|url', // If you're updating URLs
+            'price' => 'sometimes|required|numeric|min:0',
+            'category_id' => 'sometimes|required|exists:categories,id',
+        ]);
+
+        // Update the product
+        $product->update($validated);
+
+        return response()->json([
+            'message' => 'Product updated successfully',
+            'data' => $product,
+        ]);
+    }
+
+    /**
+     * Remove the specified product.
+     *
+     * @param  \App\Models\Product  $product
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function destroy(Product $product)
+    {
+        $product->delete();
+
+        return response()->json([
+            'message' => 'Product deleted successfully',
+        ]);
+    }
+    public function incrementLikes($productId)
+{
+    // Find the product by its ID
+    $product = Product::find($productId);
+
+    // If the product doesn't exist, return a 404 response
+    if (!$product) {
+        return response()->json(['message' => 'Product not found'], 404);
+    }
+
+    // Increment the likes count
+    $product->increment('likes');
+
+    // Return a success response
+    return response()->json([
+        'message' => 'Likes incremented successfully',
+        'data' => $product,
+    ]);
+}
+
+}
+
+
+
+// namespace App\Http\Controllers;
+
+// use App\Models\Product;
+// use Illuminate\Http\Request;
+// use Illuminate\Support\Facades\Storage;
+// use Illuminate\Support\Str;
+
+// class ProductController extends Controller
+// {
+    /**
+     * Fetch all products with their associated category.
+  *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    // public function index()
+    // {
+    //     $products = Product::with('category')->get();
+        
+    //     return response()->json([
+    //         'message' => 'Products fetched successfully',
+    //         'data' => $products,
+    //     ]);
+    // }
+
+ 
     // public function store(Request $request)
     // {
     //     // Validate the incoming request
@@ -134,49 +302,80 @@ class ProductController extends Controller
 //         'data' => $product,
 //     ], 201);
 // }
-public function store(Request $request)
-{
-    // Validate the request
-    $validatedData = $request->validate([
-        'name' => 'required|string|max:255',
-        'img' => 'required|array', // Accept multiple images as an array
-        'img.*' => 'required|file|image|max:2048', // Validate each image
-        'price' => 'required|numeric|min:0',
-        'category_id' => 'required|exists:categories,id',
-    ]);
+// public function store(Request $request)
+// {
+//     // Validate the request
+//     $validatedData = $request->validate([
+//         'name' => 'required|string|max:255',
+//         'img' => 'required|array', // Accept multiple images as an array
+//         'img.*' => 'required|file|image|max:2048', // Validate each image
+//         'price' => 'required|numeric|min:0',
+//         'category_id' => 'required|exists:categories,id',
+//     ]);
 
-    // Process each uploaded image
-    $imageUrls = [];
-    foreach ($validatedData['img'] as $image) {
-        $imagePath = $image->store('products', 'public'); // Save image to 'storage/app/public/products'
-        $imageUrls[] = asset('storage/' . $imagePath); // Generate the full URL
-    }
-    // Save image URLs as JSON in the database
-    $validatedData['img'] = json_encode($imageUrls);
+//     // Process each uploaded image
+//     $imageUrls = [];
+//     foreach ($validatedData['img'] as $image) {
+//         $imagePath = $image->store('products', 'public'); // Save image to 'storage/app/public/products'
+//         $imageUrls[] = asset('storage/' . $imagePath); // Generate the full URL
+//     }
+//     // Save image URLs as JSON in the database
+//     $validatedData['img'] = json_encode($imageUrls);
 
-    // Create the product
-    $product = Product::create($validatedData);
+//     // Create the product
+//     $product = Product::create($validatedData);
 
-    return response()->json([
-        'message' => 'Product created successfully',
-        'data' => $product,
-    ], 201);
-}
+//     return response()->json([
+//         'message' => 'Product created successfully',
+//         'data' => $product,
+//     ], 201);
+// }
+// public function store(Request $request)
+// {
+//     // Validate the request
+//     $validatedData = $request->validate([
+//         'name' => 'required|string|max:255',
+//         'img' => 'required|array', // Accept multiple images as an array
+//         'img.*' => 'required|file|image|max:2048', // Validate each image
+//         'price' => 'required|numeric|min:0',
+//         'category_id' => 'required|exists:categories,id',
+//         'user_id' => 'required|exists:users,id', // Validate that the provided user_id exists
+//     ]);
+
+//     // Process each uploaded image
+//     $imageUrls = [];
+//     foreach ($validatedData['img'] as $image) {
+//         $imagePath = $image->store('products', 'public'); // Save image to 'storage/app/public/products'
+//         $imageUrls[] = asset('storage/' . $imagePath); // Generate the full URL
+//     }
+
+//     // Save image URLs as JSON in the database
+//     $validatedData['img'] = json_encode($imageUrls);
+
+//     // Create the product and associate it with the provided user_id
+//     $product = Product::create($validatedData);
+
+//     return response()->json([
+//         'message' => 'Product created successfully',
+//         'data' => $product,
+//     ], 201);
+// }
+
     /**
      * Display the specified product.
      *
      * @param  \App\Models\Product  $product
      * @return \Illuminate\Http\JsonResponse
      */
-    public function show(Product $product)
-    {
-        $product->load('category'); // Eager load category
+    // public function show(Product $product)
+    // {
+    //     $product->load('category'); // Eager load category
 
-        return response()->json([
-            'message' => 'Product fetched successfully',
-            'data' => $product,
-        ]);
-    }
+    //     return response()->json([
+    //         'message' => 'Product fetched successfully',
+    //         'data' => $product,
+    //     ]);
+    // }
 
     /**
      * Update the specified product.
@@ -184,26 +383,26 @@ public function store(Request $request)
      * @param  \Illuminate\Http\Request  $request
      * @param  \App\Models\Product  $product
      * @return \Illuminate\Http\JsonResponse
-     */
-    public function update(Request $request, Product $product)
-    {
-        // Validate incoming request data
-        $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'img' => 'sometimes|required|array',
-            'img.*' => 'sometimes|required|string|url', // If you're updating URLs
-            'price' => 'sometimes|required|numeric|min:0',
-            'category_id' => 'sometimes|required|exists:categories,id',
-        ]);
+      */
+    // public function update(Request $request, Product $product)
+    // {
+    //     // Validate incoming request data
+    //     $validated = $request->validate([
+    //         'name' => 'sometimes|required|string|max:255',
+    //         'img' => 'sometimes|required|array',
+    //         'img.*' => 'sometimes|required|string|url', // If you're updating URLs
+    //         'price' => 'sometimes|required|numeric|min:0',
+    //         'category_id' => 'sometimes|required|exists:categories,id',
+    //     ]);
 
-        // Update the product
-        $product->update($validated);
+    //     // Update the product
+    //     $product->update($validated);
 
-        return response()->json([
-            'message' => 'Product updated successfully',
-            'data' => $product,
-        ]);
-    }
+    //     return response()->json([
+    //         'message' => 'Product updated successfully',
+    //         'data' => $product,
+    //     ]);
+    // }
 
     /**
      * Remove the specified product.
@@ -211,15 +410,15 @@ public function store(Request $request)
      * @param  \App\Models\Product  $product
      * @return \Illuminate\Http\JsonResponse
      */
-    public function destroy(Product $product)
-    {
-        $product->delete();
+//     public function destroy(Product $product)
+//     {
+//         $product->delete();
 
-        return response()->json([
-            'message' => 'Product deleted successfully',
-        ]);
-    }
-}
+//         return response()->json([
+//             'message' => 'Product deleted successfully',
+//         ]);
+//     }
+// }
 
 // namespace App\Http\Controllers;
 

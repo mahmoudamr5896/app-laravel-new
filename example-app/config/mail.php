@@ -34,6 +34,18 @@ return [
     |            "failover", "roundrobin"
     |
     */
+    'connections' => [
+    'smtp' => [
+        'driver' => 'smtp',
+        'host' => env('MAIL_HOST', 'smtp.mailtrap.io'),
+        'port' => env('MAIL_PORT', 2525),
+        'username' => env('MAIL_USERNAME'),
+        'password' => env('MAIL_PASSWORD'),
+        'encryption' => env('MAIL_ENCRYPTION', 'null'),
+        'timeout' => 60,  // Set timeout to 60 seconds (default is 30)
+    ],
+],
+
 
     'mailers' => [
 

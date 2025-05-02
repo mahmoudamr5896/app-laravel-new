@@ -47,16 +47,27 @@ class CategoryController extends Controller
         }
     }
     
-   public function show($id)
-{
-    $product = Product::with('category')->findOrFail($id);
+    public function show($id)
+    {
+        $category = Category::with('subcategories')->find($id);
+    
+        if (!$category) {
+            return response()->json(['message' => 'Category not found'], 404);
+        }
+    
+        return response()->json($category, 200);
+    }
+    
+     public function getSubcategories($id)
+    {
+        $category = Category::with('subcategories')->find($id);
 
-    return response()->json([
-        'message' => 'Product retrieved successfully',
-        'data' => $product,
-    ]);
-}
+        if (!$category) {
+            return response()->json(['message' => 'Category not found'], 404);
+        }
 
+        return response()->json(['subcategories' => $category->subcategories], 200);
+    }
     public function update(Request $request, Category $category)
     {
         // Validate incoming request data
