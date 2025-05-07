@@ -21,10 +21,12 @@ return new class extends Migration
             $table->timestamps();
 
             // Foreign key constraints
-            $table->foreign('category_id')
-                  ->references('id')
-                  ->on('categories')
-                  ->onDelete('cascade');
+            // $table->foreign('category_id')
+            //       ->references('id')
+            //       ->on('categories')
+            //       ->onDelete('cascade');
+            // $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
+
 
             $table->foreign('user_id')
                   ->references('id')
